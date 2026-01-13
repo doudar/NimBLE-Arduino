@@ -25,6 +25,7 @@
 #   include "NimBLEUUID.h"
 #   include <freertos/FreeRTOS.h>
 #   include <freertos/ringbuf.h>
+#   include <type_traits>
 
 #   if NIMBLE_CPP_ARDUINO_STRING_AVAILABLE
 #    include <Stream.h>
@@ -70,13 +71,23 @@ class NimBLEStream : public Stream {
     // Print/Stream TX methods
     virtual size_t write(const uint8_t* data, size_t len) override;
     virtual size_t write(uint8_t data) override { return write(&data, 1); }
-    size_t         availableForWrite() const;
-    void           flush() override;
+
+    // Template for other integral types (char, int, long, etc.)
+    template <typename T>
+    typename std::enable_if<std::is_integral<T>::value && !std::is_same<T, uint8_t>::value, size_t>::type write(T data) {
+        return write(static_cast<uint8_t>(data));
+    }
+
+    size_t availableForWrite() const;
+    void   flush() override;
 
     // Stream RX methods
     virtual int available() override;
     virtual int read() override;
     virtual int peek() override;
+
+    // Read up to len bytes into buffer (non-blocking)
+    size_t read(uint8_t* buffer, size_t len);
 
     // Serial-like helpers
     bool ready() const { return isReady(); }
@@ -217,4 +228,4 @@ static int uart_log_printf(const char* format, ...);
 #  endif
 
 # endif // NIMBLE_CPP_STREAM_H
-#endif // ESP_PLATFORM
+#endif  // ESP_PLATFORM
