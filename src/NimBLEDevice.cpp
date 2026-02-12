@@ -718,7 +718,7 @@ bool NimBLEDevice::onWhiteList(const NimBLEAddress& address) {
 bool NimBLEDevice::whiteListAdd(const NimBLEAddress& address) {
     if (!NimBLEDevice::onWhiteList(address)) {
         m_whiteList.push_back(address);
-        int rc = ble_gap_wl_set(reinterpret_cast<ble_addr_t*>(&m_whiteList[0]), m_whiteList.size());
+        int rc = ble_gap_wl_set(reinterpret_cast<ble_addr_t*>(m_whiteList.data()), m_whiteList.size());
         if (rc != 0) {
             NIMBLE_LOGE(LOG_TAG, "Failed adding to whitelist rc=%d", rc);
             m_whiteList.pop_back();
@@ -738,14 +738,16 @@ bool NimBLEDevice::whiteListRemove(const NimBLEAddress& address) {
     for (auto it = m_whiteList.begin(); it < m_whiteList.end(); ++it) {
         if (*it == address) {
             m_whiteList.erase(it);
-            int rc = ble_gap_wl_set(reinterpret_cast<ble_addr_t*>(&m_whiteList[0]), m_whiteList.size());
+            auto* list = m_whiteList.empty() ? nullptr : reinterpret_cast<ble_addr_t*>(m_whiteList.data());
+            int   rc   = ble_gap_wl_set(list, m_whiteList.size());
             if (rc != 0) {
                 m_whiteList.push_back(address);
                 NIMBLE_LOGE(LOG_TAG, "Failed removing from whitelist rc=%d", rc);
                 return false;
             }
 
-            std::vector<NimBLEAddress>(m_whiteList).swap(m_whiteList);
+            m_whiteList.shrink_to_fit();
+            break;
         }
     }
 
@@ -766,7 +768,7 @@ size_t NimBLEDevice::getWhiteListCount() {
  * @returns The NimBLEAddress at the whitelist index or null address if not found.
  */
 NimBLEAddress NimBLEDevice::getWhiteListAddress(size_t index) {
-    if (index > m_whiteList.size()) {
+    if (index >= m_whiteList.size()) { // HA HA AI FOUND AN ERROR!
         NIMBLE_LOGE(LOG_TAG, "Invalid index; %u", index);
         return NimBLEAddress{};
     }
