@@ -747,7 +747,7 @@ bool NimBLEDevice::whiteListRemove(const NimBLEAddress& address) {
             }
 
             m_whiteList.shrink_to_fit();
-            return true;
+            break;
         }
     }
 
