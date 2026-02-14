@@ -636,19 +636,21 @@ NimBLERemoteService* NimBLEClient::getService(const char* uuid) {
  * @return A pointer to the service or nullptr if not found.
  */
 NimBLERemoteService* NimBLEClient::getService(const NimBLEUUID& uuid) {
-    NIMBLE_LOGD(LOG_TAG, ">> getService: uuid: %s", uuid.toString().c_str());
+    const std::string uuidStr = uuid.toString();
+    NIMBLE_LOGD(LOG_TAG, ">> getService: uuid: %s", uuidStr.c_str());
 
     for (auto& it : m_svcVec) {
         if (it->getUUID() == uuid) {
-            NIMBLE_LOGD(LOG_TAG, "<< getService: found the service with uuid: %s", uuid.toString().c_str());
+            NIMBLE_LOGD(LOG_TAG, "<< getService: found the service with uuid: %s", uuidStr.c_str());
             return it;
         }
     }
 
     size_t prevSize = m_svcVec.size();
+    auto   getLastIfAdded = [this, prevSize]() -> NimBLERemoteService* { return m_svcVec.size() > prevSize ? m_svcVec.back() : nullptr; };
     if (retrieveServices(&uuid)) {
-        if (m_svcVec.size() > prevSize) {
-            return m_svcVec.back();
+        if (NimBLERemoteService* svc = getLastIfAdded()) {
+            return svc;
         }
 
         // If the request was successful but 16/32 bit uuid not found
@@ -657,8 +659,8 @@ NimBLERemoteService* NimBLEClient::getService(const NimBLEUUID& uuid) {
             NimBLEUUID uuid128(uuid);
             uuid128.to128();
             if (retrieveServices(&uuid128)) {
-                if (m_svcVec.size() > prevSize) {
-                    return m_svcVec.back();
+                if (NimBLERemoteService* svc = getLastIfAdded()) {
+                    return svc;
                 }
             }
         } else {
@@ -669,8 +671,8 @@ NimBLERemoteService* NimBLEClient::getService(const NimBLEUUID& uuid) {
             // if the uuid was 128 bit but not of the BLE base type this check will fail
             if (uuid16.bitSize() == BLE_UUID_TYPE_16) {
                 if (retrieveServices(&uuid16)) {
-                    if (m_svcVec.size() > prevSize) {
-                        return m_svcVec.back();
+                    if (NimBLERemoteService* svc = getLastIfAdded()) {
+                        return svc;
                     }
                 }
             }
