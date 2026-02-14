@@ -278,7 +278,7 @@ bool NimBLECharacteristic::sendValue(const uint8_t* value, size_t length, bool i
     const bool chSpecified = connHandle != BLE_HS_CONN_HANDLE_NONE;
     const bool requireSecure = m_properties & (BLE_GATT_CHR_F_READ_ENC | BLE_GATT_CHR_F_READ_AUTHEN | BLE_GATT_CHR_F_READ_AUTHOR);
     int rc = chSpecified ? BLE_HS_ENOENT : 0; // if handle specified, assume not found until sent
-    auto send = isNotification ? ble_gatts_notify_custom : ble_gatts_indicate_custom;
+    auto sendFunc = isNotification ? ble_gatts_notify_custom : ble_gatts_indicate_custom;
 
     // Notify all connected peers unless a specific handle is provided
     for (const auto& entry : subs) {
@@ -305,7 +305,7 @@ bool NimBLECharacteristic::sendValue(const uint8_t* value, size_t length, bool i
             break;
         }
 
-        rc = send(ch, m_handle, om);
+        rc = sendFunc(ch, m_handle, om);
 
         if (rc != 0 || chSpecified) {
             break;
