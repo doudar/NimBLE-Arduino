@@ -191,9 +191,8 @@ bool NimBLEClient::connect(const NimBLEAddress& address, bool deleteAttributes, 
     if (address.isNull()) {
         NIMBLE_LOGE(LOG_TAG, "Invalid peer address; (NULL)");
         return false;
-    } else {
-        m_peerAddress = address;
     }
+    m_peerAddress = address;
 
     if (deleteAttributes) {
         deleteServices();
