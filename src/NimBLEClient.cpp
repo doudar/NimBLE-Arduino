@@ -647,9 +647,9 @@ NimBLERemoteService* NimBLEClient::getService(const NimBLEUUID& uuid) {
     }
 
     size_t prevSize = m_svcVec.size();
-    auto   getNewService = [this, prevSize]() -> NimBLERemoteService* { return m_svcVec.size() > prevSize ? m_svcVec.back() : nullptr; };
+    auto   getLastIfAdded = [this, prevSize]() -> NimBLERemoteService* { return m_svcVec.size() > prevSize ? m_svcVec.back() : nullptr; };
     if (retrieveServices(&uuid)) {
-        if (NimBLERemoteService* svc = getNewService()) {
+        if (NimBLERemoteService* svc = getLastIfAdded()) {
             return svc;
         }
 
@@ -659,7 +659,7 @@ NimBLERemoteService* NimBLEClient::getService(const NimBLEUUID& uuid) {
             NimBLEUUID uuid128(uuid);
             uuid128.to128();
             if (retrieveServices(&uuid128)) {
-                if (NimBLERemoteService* svc = getNewService()) {
+                if (NimBLERemoteService* svc = getLastIfAdded()) {
                     return svc;
                 }
             }
@@ -671,7 +671,7 @@ NimBLERemoteService* NimBLEClient::getService(const NimBLEUUID& uuid) {
             // if the uuid was 128 bit but not of the BLE base type this check will fail
             if (uuid16.bitSize() == BLE_UUID_TYPE_16) {
                 if (retrieveServices(&uuid16)) {
-                    if (NimBLERemoteService* svc = getNewService()) {
+                    if (NimBLERemoteService* svc = getLastIfAdded()) {
                         return svc;
                     }
                 }
