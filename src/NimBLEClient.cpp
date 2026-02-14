@@ -100,7 +100,9 @@ NimBLEClient::~NimBLEClient() {
  */
 void NimBLEClient::deleteServices() {
     // Delete all the services.
-    for (auto& it : m_svcVec) delete it;
+    for (auto& it : m_svcVec) {
+        delete it;
+    }
 
     std::vector<NimBLERemoteService*>().swap(m_svcVec);
 } // deleteServices
