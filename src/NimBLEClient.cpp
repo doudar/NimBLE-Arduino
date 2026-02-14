@@ -100,9 +100,7 @@ NimBLEClient::~NimBLEClient() {
  */
 void NimBLEClient::deleteServices() {
     // Delete all the services.
-    for (auto& it : m_svcVec) {
-        delete it;
-    }
+    for (auto& it : m_svcVec) delete it;
 
     std::vector<NimBLERemoteService*>().swap(m_svcVec);
 } // deleteServices
@@ -191,9 +189,8 @@ bool NimBLEClient::connect(const NimBLEAddress& address, bool deleteAttributes, 
     if (address.isNull()) {
         NIMBLE_LOGE(LOG_TAG, "Invalid peer address; (NULL)");
         return false;
-    } else {
-        m_peerAddress = address;
     }
+    m_peerAddress = address;
 
     if (deleteAttributes) {
         deleteServices();
