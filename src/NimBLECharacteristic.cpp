@@ -82,14 +82,12 @@ NimBLEDescriptor* NimBLECharacteristic::createDescriptor(const char* uuid, uint3
  * @return The new BLE descriptor.
  */
 NimBLEDescriptor* NimBLECharacteristic::createDescriptor(const NimBLEUUID& uuid, uint32_t properties, uint16_t maxLen) {
-    NimBLEDescriptor* pDescriptor = nullptr;
     if (uuid == NimBLEUUID(static_cast<uint16_t>(0x2904))) {
         NIMBLE_LOGW(LOG_TAG, "0x2904 descriptor should be created with create2904()");
-        pDescriptor = create2904();
-    } else {
-        pDescriptor = new NimBLEDescriptor(uuid, properties, maxLen, this);
+        return create2904();
     }
 
+    NimBLEDescriptor* pDescriptor = new NimBLEDescriptor(uuid, properties, maxLen, this);
     addDescriptor(pDescriptor);
     return pDescriptor;
 } // createDescriptor
@@ -277,9 +275,10 @@ bool NimBLECharacteristic::sendValue(const uint8_t* value, size_t length, bool i
     const auto subs = getSubscribers(); // make a copy to avoid issues if subscribers change while sending
     ble_npl_hw_exit_critical(0);
 
-    bool chSpecified = connHandle != BLE_HS_CONN_HANDLE_NONE;
-    bool requireSecure = m_properties & (BLE_GATT_CHR_F_READ_ENC | BLE_GATT_CHR_F_READ_AUTHEN | BLE_GATT_CHR_F_READ_AUTHOR);
+    const bool chSpecified = connHandle != BLE_HS_CONN_HANDLE_NONE;
+    const bool requireSecure = m_properties & (BLE_GATT_CHR_F_READ_ENC | BLE_GATT_CHR_F_READ_AUTHEN | BLE_GATT_CHR_F_READ_AUTHOR);
     int rc = chSpecified ? BLE_HS_ENOENT : 0; // if handle specified, assume not found until sent
+    auto sendFunc = isNotification ? ble_gatts_notify_custom : ble_gatts_indicate_custom;
 
     // Notify all connected peers unless a specific handle is provided
     for (const auto& entry : subs) {
@@ -306,11 +305,7 @@ bool NimBLECharacteristic::sendValue(const uint8_t* value, size_t length, bool i
             break;
         }
 
-        if (isNotification) {
-            rc = ble_gatts_notify_custom(ch, m_handle, om);
-        } else {
-            rc = ble_gatts_indicate_custom(ch, m_handle, om);
-        }
+        rc = sendFunc(ch, m_handle, om);
 
         if (rc != 0 || chSpecified) {
             break;
@@ -437,11 +432,7 @@ void NimBLECharacteristic::writeEvent(const uint8_t* val, uint16_t len, NimBLECo
  * used to define any callbacks for the characteristic.
  */
 void NimBLECharacteristic::setCallbacks(NimBLECharacteristicCallbacks* pCallbacks) {
-    if (pCallbacks != nullptr) {
-        m_pCallbacks = pCallbacks;
-    } else {
-        m_pCallbacks = &defaultCallback;
-    }
+    m_pCallbacks = pCallbacks != nullptr ? pCallbacks : &defaultCallback;
 } // setCallbacks
 
 /**
